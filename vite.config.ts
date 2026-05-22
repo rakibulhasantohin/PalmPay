@@ -12,7 +12,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['pwa-192x192.svg', 'pwa-512x512.svg'],
         manifest: {
           name: 'PalmPay Loan Manager',
           short_name: 'PalmPay',
@@ -20,14 +20,14 @@ export default defineConfig(({mode}) => {
           theme_color: '#4f46e5',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: 'pwa-192x192.svg',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'pwa-512x512.svg',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/svg+xml'
             }
           ]
         },
@@ -43,6 +43,24 @@ export default defineConfig(({mode}) => {
               urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
               handler: 'CacheFirst',
               options: { cacheName: 'gstatic-fonts-cache' }
+            },
+            {
+              urlPattern: /\.(?:png|jpg|jpeg|svg|webp|gif|ico)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'images-cache',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 30 * 24 * 60 * 60 // 30 Days
+                }
+              }
+            },
+            {
+              urlPattern: /^https:\/\/[a-zA-Z0-9.-]+\.(?:png|jpg|jpeg|svg|webp|gif|ico)(?:\?.*)?$/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'external-images-cache'
+              }
             }
           ]
         }
