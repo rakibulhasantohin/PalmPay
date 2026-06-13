@@ -30,9 +30,12 @@ import {
   FileBadge,
   LogOut,
   Edit2,
-  X
+  X,
+  Unlock,
+  FileDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { generateRepaymentReceiptPDF } from './utils/pdfGenerator';
 
 // --- Types ---
 type Screen = 
@@ -149,7 +152,7 @@ const OnboardingScreen = ({ onStart }: { onStart: () => void }) => {
   );
 };
 
-const HomeScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
+const HomeScreen = ({ setScreen, isFullyPaid, setIsFullyPaid }: { setScreen: (s: Screen) => void; isFullyPaid: boolean; setIsFullyPaid: (v: boolean) => void }) => {
   return (
     <div className="pb-20">
       <div className="p-4 flex items-center justify-between mb-2">
@@ -173,6 +176,29 @@ const HomeScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
       </div>
 
       <div className="px-4">
+        {isFullyPaid && (
+          <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 mb-4 animate-in fade-in zoom-in duration-500">
+            <div className="flex gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0">
+                <ShieldCheck size={24} />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-emerald-800 text-sm">অভিনন্দন! আপনার ফোনটি আজীবনের জন্য আনলকড</h4>
+                <p className="text-xs text-emerald-600 mt-1 leading-relaxed">
+                  আপনার মোবাইলের মোট দাম ৩২,৯৯৯.০০ টাকা এবং ঋণের কিস্তিসহ সর্বমোট ৩৯,৭৮২.০০ টাকা সম্পূর্ণ সফলভাবে পরিশোধ করা হয়েছে। এখন আপনার আর কোনো কিস্তি বকেয়া নেই এবং আপনার ডিভাইসটি সম্পূর্ণরূপে স্থায়ীভাবে আনলক করা হয়েছে। আর কখনো টাকা দেওয়া লাগবে না।
+                </p>
+                <button
+                  onClick={() => generateRepaymentReceiptPDF(isFullyPaid)}
+                  className="mt-3 flex items-center justify-center gap-2 w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-sm transition-all cursor-pointer"
+                >
+                  <FileDown size={14} />
+                  <span>রশিদ ও আনলক সার্টিফিকেট ডাউনলোড করুন (PDF)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm overflow-hidden mb-4">
           <div className="flex items-center gap-2 p-3 bg-indigo-50 border-b border-indigo-100">
              <Smartphone size={16} className="text-indigo-600" />
@@ -186,11 +212,18 @@ const HomeScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
                   <span className="text-indigo-600 font-bold">TECNO</span>
                   <span className="text-xs text-slate-500">| KM9,256+8GB</span>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                  <span>ডিভাইসটি সক্রিয় থাকবে যতক্ষণ না:</span>
-                  <Lock size={10} className="text-indigo-500" />
-                  <span className="text-indigo-600 font-medium">Jun/16/2026</span>
-                </div>
+                {isFullyPaid ? (
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full w-fit">
+                    <Unlock size={10} className="text-emerald-600" />
+                    <span>ডিভাইসটি সম্পূর্ণ আনলকড (আজীবন)</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                    <span>ডিভাইসটি সক্রিয় থাকবে যতক্ষণ না:</span>
+                    <Lock size={10} className="text-indigo-500" />
+                    <span className="text-indigo-600 font-medium">Jun/16/2026</span>
+                  </div>
+                )}
               </div>
               <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
                  <img src="https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&q=80&w=100" alt="Device" className="w-full h-full object-cover" />
@@ -201,23 +234,47 @@ const HomeScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
               <div>
                 <p className="text-sm text-gray-600 mb-1">বর্তমান বকেয়া</p>
                 <div className="flex items-center gap-1">
-                  <span className="text-2xl font-black text-slate-900 leading-none">TK 3,671.00</span>
+                  <span className={`text-2xl font-black ${isFullyPaid ? 'text-emerald-600' : 'text-slate-900'} leading-none`}>
+                    {isFullyPaid ? 'TK 0.00' : 'TK 3,671.00'}
+                  </span>
                   <button className="text-slate-400"><ChevronRight size={20} /></button>
                 </div>
-                <p className="text-[10px] text-orange-500 mt-1">আপনি যেকোন পরিমাণের অর্থ প্রদান করতে পারবেন</p>
+                {isFullyPaid ? (
+                  <p className="text-[10px] text-emerald-600 mt-1 font-bold">সব কিস্তি পরিশোধ সম্পন্ন হয়েছে</p>
+                ) : (
+                  <p className="text-[10px] text-orange-500 mt-1">আপনি যেকোন পরিমাণের অর্থ প্রদান করতে পারবেন</p>
+                )}
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600 mb-1">শেষ তারিখ</p>
-                <span className="text-2xl font-black text-slate-900 leading-none">16 Jun</span>
+                <p className="text-sm text-gray-600 mb-1">{isFullyPaid ? 'পরিশোধের অবস্থা' : 'শেষ তারিখ'}</p>
+                <span className={`text-2xl font-black leading-none ${isFullyPaid ? 'text-emerald-500 text-lg' : 'text-slate-900'}`}>
+                  {isFullyPaid ? 'পরিশোধিত' : '16 Jun'}
+                </span>
               </div>
             </div>
 
-            <button 
-              onClick={() => setScreen('payment_input')}
-              className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl mb-4 text-center border-b-4 border-indigo-800 active:transform active:translate-y-1 active:border-b-0 transition-all"
-            >
-              নির্ধারিত সময়ের আগে পরিশোধ করুন
-            </button>
+            {isFullyPaid ? (
+              <div className="space-y-2 mb-4">
+                <div className="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl text-center border-b-4 border-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-100/50">
+                  <CheckCircle2 size={20} />
+                  <span>সকল কিস্তি সফলভাবে পরিশোধিত</span>
+                </div>
+                <button
+                  onClick={() => generateRepaymentReceiptPDF(isFullyPaid)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3.5 rounded-2xl text-center border-b-4 border-indigo-800 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-indigo-100"
+                >
+                  <FileDown size={18} />
+                  <span>পেমেন্ট রিসিট বিবরণী ডাউনলোড (PDF)</span>
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setScreen('payment_input')}
+                className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl mb-4 text-center border-b-4 border-indigo-800 active:transform active:translate-y-1 active:border-b-0 transition-all"
+              >
+                নির্ধারিত সময়ের আগে পরিশোধ করুন
+              </button>
+            )}
             
             <div className="border-t border-dashed border-gray-200 pt-4 flex items-center justify-between">
               <button onClick={() => setScreen('loan_details')} className="flex items-center gap-1">
@@ -225,12 +282,14 @@ const HomeScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
                  <p className="text-[10px] text-gray-500">মোট অপিরিশোধিত</p>
               </button>
               <button onClick={() => setScreen('loan_details')} className="flex items-center gap-1 text-slate-500">
-                <span className="text-xs">৬ শর্তাবলী</span>
+                <span className="text-xs">{isFullyPaid ? '০ শর্তাবলী' : '৬ শর্তাবলী'}</span>
                 <ChevronRight size={14} />
               </button>
             </div>
             <div className="flex justify-end mt-1">
-               <span className="text-xs font-bold text-slate-900">TK 5,627.00</span>
+               <span className={`text-xs font-bold ${isFullyPaid ? 'text-emerald-600' : 'text-slate-900'}`}>
+                 {isFullyPaid ? 'TK 0.00' : 'TK 5,627.00'}
+               </span>
             </div>
           </div>
         </div>
@@ -268,8 +327,8 @@ const HomeScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
 
           <div className="flex items-center justify-around bg-white p-4 rounded-2xl border border-gray-100 mt-4">
              <div className="flex flex-col items-center gap-1">
-                <Lock size={20} className="text-slate-700" />
-                <span className="text-[10px] font-medium text-slate-800">ফোন লক</span>
+                <Unlock size={20} className="text-emerald-600" />
+                <span className="text-[10px] font-bold text-emerald-600">ফোন আজীবন আনলক</span>
              </div>
              <div className="flex flex-col items-center gap-1">
                 <HelpCircle size={20} className="text-slate-700" />
@@ -339,8 +398,8 @@ const NotificationsScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) 
   );
 };
 
-const PaymentInputScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
-  const [amount, setAmount] = useState('3671.00');
+const PaymentInputScreen = ({ setScreen, isFullyPaid, setIsFullyPaid }: { setScreen: (s: Screen) => void; isFullyPaid: boolean; setIsFullyPaid: (v: boolean) => void }) => {
+  const [amount, setAmount] = useState(isFullyPaid ? '0.00' : '3671.00');
   const [showPicker, setShowPicker] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'bkash' | 'nagad'>('bkash');
 
@@ -364,22 +423,35 @@ const PaymentInputScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =
              <span className="text-xl font-black text-slate-900">TK</span>
              <span className="text-4xl font-black text-slate-900">{amount}</span>
           </div>
-          <button className="text-slate-400 p-2">
-            <Edit2 size={24} />
-          </button>
+          {!isFullyPaid && (
+            <button className="text-slate-400 p-2">
+              <Edit2 size={24} />
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 mb-10">
-          <button className="flex-1 bg-white border border-indigo-100 py-2 rounded-full text-xs font-bold text-slate-600">কারেন্ট TK3,671.00</button>
-          <button className="flex-1 bg-gray-50 border border-gray-100 py-2 rounded-full text-xs font-bold text-slate-600">মোট TK5,627.00</button>
+          <button className="flex-1 bg-white border border-indigo-100 py-2 rounded-full text-xs font-bold text-slate-600">
+            {isFullyPaid ? 'কারেন্ট TK 0.00' : 'কারেন্ট TK3,671.00'}
+          </button>
+          <button className="flex-1 bg-gray-50 border border-gray-100 py-2 rounded-full text-xs font-bold text-slate-600">
+            {isFullyPaid ? 'মোট TK 0.00' : 'মোট TK5,627.00'}
+          </button>
         </div>
 
-        <button 
-          onClick={() => setShowPicker(true)}
-          className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl mb-4 shadow-lg shadow-indigo-100"
-        >
-          এখন পরিশোধ করুন
-        </button>
+        {isFullyPaid ? (
+          <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl border border-emerald-100 text-center font-bold mb-4 flex items-center justify-center gap-2">
+            <CheckCircle2 size={20} />
+            <span>আপনার সকল কিস্তি পরিশোধিত রয়েছে!</span>
+          </div>
+        ) : (
+          <button 
+            onClick={() => setShowPicker(true)}
+            className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl mb-4 shadow-lg shadow-indigo-100"
+          >
+            এখন পরিশোধ করুন
+          </button>
+        )}
 
         <button className="w-full bg-indigo-50 text-indigo-700 font-bold py-4 rounded-2xl">
           পরিশোধের সহায়তার জন্য শেয়ার করুন
@@ -479,8 +551,8 @@ const PaymentInputScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =
   );
 };
 
-const PaymentHistoryScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
-  const history = [
+const PaymentHistoryScreen = ({ setScreen, isFullyPaid }: { setScreen: (s: Screen) => void; isFullyPaid: boolean }) => {
+  const baseHistory = [
     { id: 1, amount: '15,000.00', date: 'May 10, 2026, 04:44 PM', status: 'success', label: 'সফল' },
     { id: 5, amount: '3,671.00', date: 'Apr 16, 2026, 09:51 PM', status: 'success', label: 'সফল' },
     { id: 6, amount: '3,671.00', date: 'Apr 16, 2026, 09:49 PM', status: 'fail', label: 'ব্যর্থ হয়েছে' },
@@ -490,9 +562,29 @@ const PaymentHistoryScreen = ({ setScreen }: { setScreen: (s: Screen) => void })
     { id: 10, amount: '1,400.00', date: 'Jan 16, 2026, 01:39 PM', status: 'success', label: 'সফল' },
   ];
 
+  const history = isFullyPaid 
+    ? [
+        { id: 100, amount: '5,627.00', date: 'June 13, 2026, 07:25 PM', status: 'success', label: 'সফল' },
+        ...baseHistory
+      ]
+    : baseHistory;
+
   return (
     <div className="min-h-screen bg-white">
       <Header title="পরিশোধ লেনদেন" onBack={() => setScreen('payment_input')} />
+      <div className="p-4 bg-indigo-50/70 border-b border-indigo-100/50 flex items-center justify-between mb-2">
+        <div className="pr-2">
+          <h4 className="font-bold text-slate-800 text-xs">সম্পূর্ণ পেমেন্ট রিপোর্ট (PDF)</h4>
+          <p className="text-[10px] text-slate-500">মোবাইল বিবরণী ও পেমেন্ট হিস্ট্রি একসাথে ডাউনলোড করুন</p>
+        </div>
+        <button
+          onClick={() => generateRepaymentReceiptPDF(isFullyPaid)}
+          className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer"
+        >
+          <FileDown size={12} />
+          <span>ডাউনলোড</span>
+        </button>
+      </div>
       <div className="p-4 space-y-6">
         {history.map(item => (
           <div key={item.id} className="flex justify-between items-start">
@@ -510,7 +602,7 @@ const PaymentHistoryScreen = ({ setScreen }: { setScreen: (s: Screen) => void })
   );
 };
 
-const LoanSummaryScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
+const LoanSummaryScreen = ({ setScreen, isFullyPaid }: { setScreen: (s: Screen) => void; isFullyPaid: boolean }) => {
   const [activeTab, setActiveTab] = useState<'plan' | 'history'>('plan');
   
   const schedule = [
@@ -518,8 +610,8 @@ const LoanSummaryScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =>
     { id: 2, title: '2nd মেয়াদ', date: 'Mar 16', amount: '3,671.00', status: 'paid', statusLabel: 'পরিশোধ করা' },
     { id: 3, title: '3rd মেয়াদ', date: 'Apr 16', amount: '3,671.00', status: 'paid', statusLabel: 'পরিশোধ করা' },
     { id: 4, title: '4th মেয়াদ', date: 'May 16', amount: '15,000.00', status: 'paid', statusLabel: 'পরিশোধ করা' },
-    { id: 5, title: '5th মেয়াদ', date: 'Jun 16', amount: '3,671.00', status: 'unpaid', statusLabel: 'অপিরিশোধিত', principal: '3,111.00', fee: '560.00' },
-    { id: 6, title: '6th মেয়াদ', date: 'Jul 16', amount: '1,956.00', status: 'unpaid', statusLabel: 'অপিরিশোধিত', principal: '1,396.00', fee: '560.00' },
+    { id: 5, title: '5th মেয়াদ', date: 'Jun 16', amount: '3,671.00', status: isFullyPaid ? 'paid' : 'unpaid', statusLabel: isFullyPaid ? 'পরিশোধ করা' : 'অপিরিশোধিত', principal: '3,111.00', fee: '560.00' },
+    { id: 6, title: '6th মেয়াদ', date: 'Jul 16', amount: '1,956.00', status: isFullyPaid ? 'paid' : 'unpaid', statusLabel: isFullyPaid ? 'পরিশোধ করা' : 'অপিরিশোধিত', principal: '1,396.00', fee: '560.00' },
   ];
 
   return (
@@ -538,20 +630,30 @@ const LoanSummaryScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =>
 
         <div className="mb-6 mt-8">
            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">অপিরিশোধিত</span>
-              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">৬ শর্তাবলী বাম</span>
+              <span className={`text-xs px-2 py-0.5 rounded font-bold ${isFullyPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                {isFullyPaid ? 'পরিশোধ সম্পন্ন' : 'অপিরিশোধিত'}
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded font-bold ${isFullyPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                {isFullyPaid ? '০ শর্তাবলী বাম' : '৬ শর্তাবলী বাম'}
+              </span>
            </div>
-           <h2 className="text-4xl font-black text-slate-900 border-b border-gray-100 pb-4 mb-4">TK 5,627.00</h2>
+           <h2 className={`text-4xl font-black border-b border-gray-100 pb-4 mb-4 ${isFullyPaid ? 'text-emerald-600' : 'text-slate-900'}`}>
+             {isFullyPaid ? 'TK 0.00' : 'TK 5,627.00'}
+           </h2>
            <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
               <span>অপিরিশোধিত মূল অর্থ</span>
-              <span className="font-bold text-slate-800">TK 4,507.00</span>
+              <span className={`font-bold ${isFullyPaid ? 'text-emerald-600' : 'text-slate-800'}`}>
+                {isFullyPaid ? 'TK 0.00' : 'TK 4,507.00'}
+              </span>
            </div>
            <div className="flex justify-between items-center text-xs text-slate-500">
               <div className="flex items-center gap-1">
                 <span>অপিরিশোধিত পরিষেবা ফি</span>
                 <Info size={12} />
               </div>
-              <span className="font-bold text-slate-800">TK 1,120.00</span>
+              <span className={`font-bold ${isFullyPaid ? 'text-emerald-600' : 'text-slate-800'}`}>
+                {isFullyPaid ? 'TK 0.00' : 'TK 1,120.00'}
+              </span>
            </div>
         </div>
 
@@ -608,10 +710,22 @@ const LoanSummaryScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =>
           </div>
         ) : (
           <div className="space-y-6">
+            {isFullyPaid && (
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100">
+                 <div>
+                    <h4 className="font-black text-emerald-600">TK 5,627.00</h4>
+                    <p className="text-[10px] text-gray-400">June 13, 2026, 07:25 PM</p>
+                 </div>
+                 <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                   <span>বিকাশ দ্বারা পরিশোধ (সফল)</span>
+                   <ChevronRight size={12} />
+                 </div>
+              </div>
+            )}
             <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100">
                <div>
                   <h4 className="font-black text-slate-900">TK 15,000.00</h4>
-                  <p className="text-[10px] text-gray-400">Jun 10, 2026, 4:44 PM</p>
+                  <p className="text-[10px] text-gray-400">May 10, 2026, 4:44 PM</p>
                </div>
                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-500">
                  <span>বিকাশ দ্বারা পরিশোধ</span>
@@ -663,7 +777,14 @@ const LoanSummaryScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =>
       </div>
 
       <div className="p-4 bg-white border-t border-gray-100">
-        <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl">আরো শোধ</button>
+        {isFullyPaid ? (
+          <div className="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2">
+            <CheckCircle2 size={20} />
+            <span>লোন সম্পূর্ণ পরিশোধ সম্পন্ন হয়েছে</span>
+          </div>
+        ) : (
+          <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl">আরো শোধ</button>
+        )}
       </div>
     </div>
   );
@@ -833,7 +954,7 @@ const ProfileScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
   );
 }
 
-const MyOrdersScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
+const MyOrdersScreen = ({ setScreen, isFullyPaid }: { setScreen: (s: Screen) => void; isFullyPaid: boolean }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header title="আমার অর্ডার" onBack={() => setScreen('me')} />
@@ -852,7 +973,11 @@ const MyOrdersScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
           <div className="flex-1">
             <div className="flex justify-between items-start mb-1">
               <h4 className="font-bold text-slate-800 text-sm">TECNO POVA slim 5G</h4>
-              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">কিস্তি চলমান</span>
+              {isFullyPaid ? (
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">সফল</span>
+              ) : (
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">কিস্তি চলমান</span>
+              )}
             </div>
             <p className="text-[10px] text-gray-400">ক্রয়ের ধরণ: নির্ধারিত দোকানে</p>
           </div>
@@ -912,7 +1037,7 @@ const ReminderInfoScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =
   );
 }
 
-const LoanRecordsScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => {
+const LoanRecordsScreen = ({ setScreen, isFullyPaid }: { setScreen: (s: Screen) => void; isFullyPaid: boolean }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header title="ঋণ রেকর্ড" onBack={() => setScreen('me')} />
@@ -926,7 +1051,11 @@ const LoanRecordsScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) =>
             <p className="text-[10px] text-gray-400">Jan, 16, 2026, 01:39</p>
           </div>
           <div className="flex items-center gap-1">
-             <span className="text-xs font-black text-orange-500">TK 5,627.00 অপিরিশোধিত</span>
+             {isFullyPaid ? (
+               <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">সম্পূর্ণ পরিশোধিত</span>
+             ) : (
+               <span className="text-xs font-black text-orange-500 bg-orange-50 px-2.5 py-1 rounded-full">TK 5,627.00 অপিরিশোধিত</span>
+             )}
              <ChevronRight size={18} className="text-gray-300" />
           </div>
         </div>
@@ -1085,6 +1214,7 @@ const TermsAndConditionsScreen = ({ setScreen }: { setScreen: (s: Screen) => voi
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('loading');
   const [activeTab, setActiveTab] = useState<'home' | 'me'>('home');
+  const [isFullyPaid, setIsFullyPaid] = useState(true);
 
   useEffect(() => {
     if (currentScreen === 'loading') {
@@ -1104,19 +1234,19 @@ export default function App() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'onboarding': return <OnboardingScreen onStart={() => setCurrentScreen('home')} />;
-      case 'home': return <HomeScreen setScreen={setCurrentScreen} />;
+      case 'home': return <HomeScreen setScreen={setCurrentScreen} isFullyPaid={isFullyPaid} setIsFullyPaid={setIsFullyPaid} />;
       case 'me': return <ProfileScreen setScreen={setCurrentScreen} />;
       case 'notifications': return <NotificationsScreen setScreen={setCurrentScreen} />;
-      case 'payment_input': return <PaymentInputScreen setScreen={setCurrentScreen} />;
-      case 'payment_history': return <PaymentHistoryScreen setScreen={setCurrentScreen} />;
-      case 'loan_summary': return <LoanSummaryScreen setScreen={setCurrentScreen} />;
+      case 'payment_input': return <PaymentInputScreen setScreen={setCurrentScreen} isFullyPaid={isFullyPaid} setIsFullyPaid={setIsFullyPaid} />;
+      case 'payment_history': return <PaymentHistoryScreen setScreen={setCurrentScreen} isFullyPaid={isFullyPaid} />;
+      case 'loan_summary': return <LoanSummaryScreen setScreen={setCurrentScreen} isFullyPaid={isFullyPaid} />;
       case 'loan_details': return <LoanDetailsScreen setScreen={setCurrentScreen} />;
       case 'reminder_info': return <ReminderInfoScreen setScreen={setCurrentScreen} />;
-      case 'my_orders': return <MyOrdersScreen setScreen={setCurrentScreen} />;
-      case 'loan_records': return <LoanRecordsScreen setScreen={setCurrentScreen} />;
+      case 'my_orders': return <MyOrdersScreen setScreen={setCurrentScreen} isFullyPaid={isFullyPaid} />;
+      case 'loan_records': return <LoanRecordsScreen setScreen={setCurrentScreen} isFullyPaid={isFullyPaid} />;
       case 'terms': return <TermsAndConditionsScreen setScreen={setCurrentScreen} />;
       case 'loading': return <LoadingScreen />;
-      default: return <HomeScreen setScreen={setCurrentScreen} />;
+      default: return <HomeScreen setScreen={setCurrentScreen} isFullyPaid={isFullyPaid} setIsFullyPaid={setIsFullyPaid} />;
     }
   };
 
